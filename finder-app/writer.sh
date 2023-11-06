@@ -2,7 +2,6 @@
 
 # Check if the number of arguments is 2
 if [ $# -ne 2 ]; then
-echo "Usage: writer.sh writefile writestr"
 exit 1
 fi
 
