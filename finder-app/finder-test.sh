@@ -52,9 +52,12 @@ fi
 #make clean
 #make
 
+rm -f *.o 
+rm -f writer
+gcc writer.c -o writer
 for i in $( seq 1 $NUMFILES)
 do
-	./writer.sh "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	./writer "$WRITEDIR/$username$i.txt" "$WRITESTR"
 done
 
 OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")

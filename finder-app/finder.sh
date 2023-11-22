@@ -1,5 +1,4 @@
 #!/bin/bash
-echo "afra finder"
 if [ $# -ne 2 ]
 then
 	echo "invalid argument number"
