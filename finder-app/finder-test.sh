@@ -52,9 +52,6 @@ fi
 #make clean
 #make
 
-rm -f *.o 
-rm -f writer
-gcc writer.c -o writer
 for i in $( seq 1 $NUMFILES)
 do
 	./writer "$WRITEDIR/$username$i.txt" "$WRITESTR"
