@@ -1,5 +1,9 @@
 #include "systemcalls.h"
-
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <fcntl.h>
 /**
  * @param cmd the command to execute with system()
  * @return true if the command in @param cmd was executed
@@ -16,8 +20,17 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
-    return true;
+    int status = system(cmd);
+    if (status == 0)
+    {
+        printf("system call succeed\n"); 
+        return true;
+    }
+    else
+    {
+        printf("system call failed\n"); 
+        return false;
+    }
 }
 
 /**
@@ -33,21 +46,92 @@ bool do_system(const char *cmd)
 *   fork, waitpid, or execv() command, or if a non-zero return value was returned
 *   by the command issued in @param arguments with the specified arguments.
 */
+bool is_valid_absolute_path(const char *path) {
+    return access(path, X_OK) == 0;
+}
 
 bool do_exec(int count, ...)
 {
+    printf("start\n");
     va_list args;
     va_start(args, count);
     char * command[count+1];
     int i;
+    int stat = 0 ;
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
+    if (!is_valid_absolute_path(command[0])) {
+        fprintf(stderr, "Error: %s is not a valid absolute path.\n", command[0]);
+        return false;
+    }
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+    pid_t pid = fork();
+    if(pid == -1)
+    {
+        perror("fork failed");
+        return false;
+    }
+    else if (pid == 0)
+    {
+        if(execv(command[0],command) == -1)
+        {
+            printf("wrong path\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        printf("Parent pid\n");
+        if (waitpid(pid, &stat, 0) == -1) {
+        // Wait failed
+        perror("waitpid");
+        return false;
+        }
+        if (WIFEXITED(stat) && WEXITSTATUS(stat) == 0) {
+        // Child exited normally with zero status
+        return true;
+        }
+        else {
+        // Child exited abnormally or with non-zero status
+        return false;
+        }
+    }  
+
+        /*
+        if(WIFEXITED (stat))
+        {
+            printf("22\n");
+            return true;
+        }
+        else
+        {
+            printf("33,%d\n",WEXITSTATUS (stat));
+            return false;
+        }
+        
+        if (waitpid (0, &stat, 0) == -1)
+        {
+            printf("22\n");
+            return false;
+        }
+        if (WIFEXITED (stat))
+        {
+            printf("33,%d\n",WEXITSTATUS (stat));
+            return true;
+        }
+        else
+        {
+            
+        }
+        */
+    
+    
+
+    //command[count] = command[count];
 
 /*
  * TODO:
@@ -60,8 +144,8 @@ bool do_exec(int count, ...)
 */
 
     va_end(args);
-
-    return true;
+    printf("44\n");
+    return false;
 }
 
 /**
@@ -82,7 +166,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+    //command[count] = command[count];
 
 
 /*
@@ -92,6 +176,49 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+    pid_t pid;
+    int stat = 0;
+    int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+
+    if (fd < 0) 
+    { 
+        perror("open"); 
+        abort(); 
+    }
+    pid = fork();
+    if(pid == -1)
+    {
+        perror("fork failed");
+    }
+    else if (pid == 0)
+    {
+        if (dup2(fd, 1) < 0) 
+        { 
+            perror("dup2"); 
+            abort(); 
+        }
+        close(fd);
+        execv(command[0],command);
+    }
+    else
+    {
+        printf("Parent pid\n");
+        close(fd);
+        if (waitpid(pid, &stat, 0) == -1) {
+        // Wait failed
+        perror("waitpid");
+        return false;
+        }
+        if (WIFEXITED(stat) && WEXITSTATUS(stat) == 0) {
+        // Child exited normally with zero status
+        return true;
+        }
+        else {
+        // Child exited abnormally or with non-zero status
+        return false;
+        }
+    }  
+    
 
     va_end(args);
 
